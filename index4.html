@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <head>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+    <script src="./src/jquery-3.1.1.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="./src/bootstrap.min.css">
+    <script src="./src/bootstrap.min.js"></script>
+    <title>Titanic</title>
+    <style type="text/css">
+        h2 {
+            text-align: center;
+            font-family: Georgia;
+        }
+        h6 {
+            text-align: left;
+            font-family: courier;
+        }
+        body {
+            width: 75%;
+            margin-right: auto;
+            margin-left: auto;
+        }
+        .btns {
+            position: fixed;
+            top: 50px;
+            left: 1300px;
+        }
+    </style>
+    <script type="text/javascript">
+        function draw(data) {
+            "use strict";
+            var margin = 75,
+                width = 1400 - margin,
+                height = 600 - margin;
+
+            // console.table(data);
+
+            d3.select("body")
+              .append("h2")
+              .text("泰坦尼克号幸存者统计")
+              .append("h6")
+              .text("");
+
+            var svg = d3.select('body')
+                .append('svg')
+                .attr('width', width + margin)
+                .attr('height', height + margin);
+
+            function update(cate) {
+                var myChart = new dimple.chart(svg, data);
+
+                if (cate == '性别及船舱') {
+                    // 以性别、船舱为组合并为类型，作为X轴
+                    var x = myChart.addCategoryAxis('x', ['ClassSex']);
+                    // 以船舱和性别排序
+                    x.addOrderRule('ClassSex')
+                    x.title = '性别和船舱'
+                    // Y轴为人数统计
+                    var y = myChart.addMeasureAxis('y', 'Count');
+                    y.title = '数量'
+                }
+                else if (cate == '年龄比例') {
+                    // 以年龄段作为X轴分类标准
+                    var x = myChart.addCategoryAxis('x', ['Span', 'Pclass']);
+                    // 以年龄段排序
+                    x.addOrderRule(['0-8', '9-17', '18-30', '31-50', '51+', 'Unknown'], false);
+                    x.addGroupOrderRule('Pclass', false);  
+                    x.title = '年龄'
+                    // Y轴为人数比例统计
+                    var y = myChart.addPctAxis('y', 'Count');
+                    y.title = '比例'
+                }
+                
+                // 以是否生存为组，添加柱状图序列
+                var mySeries = myChart.addSeries(["Survived"], dimple.plot.bar);
+                // 统计数量
+                mySeries.aggregate = dimple.aggregateMethod.count;
+
+                // 给幸存者和罹难者添加不同的颜色
+                myChart.assignColor('Survived', '#20bf6b');  // #2d98da
+                myChart.assignColor('Died', '#d1d8e0');  // #e55039
+
+                // 添加图例
+                myChart.addLegend(1250, 80, 120, 120, "right");
+     
+                // 绘画
+                myChart.draw(500);
+            }
+            update('性别及船舱');
+
+            var btnContent = ['性别及船舱', '年龄比例']
+            var buttons = d3.select("body")
+                            .append("div")
+                            .attr("class", "btns")
+                            .selectAll("div")
+                            .data(btnContent)
+                            .enter()
+                            .append("div")
+                            .attr("class", "btn btn-primary")
+                            .text(function(d) {
+                                return d;
+                            });
+            buttons.on('click', function(d) {
+                svg.selectAll("*").remove();
+                update(d);
+            })
+        }
+    </script>
+</head>
+<body>
+<script type="text/javascript">
+    d3.csv('train.csv', function(d) {
+        // 增加一个Count用于统计人数
+        d['Count'] = 1;
+        if (d['Survived'] == 1) {
+            d['Survived'] = 'Survived';
+        } 
+        else {
+            d['Survived'] = 'Died';
+        }
+        
+        if (d['Sex'] == 'male') {
+            if (d['Pclass'] == 1) {
+                d['ClassSex'] = 'Class-1, Male'
+            }
+            else if (d['Pclass'] == 2) {
+                d['ClassSex'] = 'Class-2, Male'
+            } 
+            else if (d['Pclass'] == 3) {
+                d['ClassSex'] = 'Class-3, Male'
+            } 
+        }
+        else {
+            if (d['Pclass'] == 1) {
+                d['ClassSex'] = 'Class-1, Female'
+            }
+            else if (d['Pclass'] == 2) {
+                d['ClassSex'] = 'Class-2, Female'
+            } 
+            else if (d['Pclass'] == 3) {
+                d['ClassSex'] = 'Class-3, Female'
+            }
+        }
+
+        if (d['Age'] !== '') {
+            // 对不同年龄段进行分组
+            d['Age'] = parseFloat(d['Age']);
+            if (d['Age'] <= 8) {
+                d['Span'] = '0-8';
+            }
+            else if (8 < d['Age'] && d['Age'] <= 17) {
+                d['Span'] = '9-17';
+            }
+            else if (18 < d['Age'] && d['Age'] <= 30) {
+                d['Span'] = '18-30';
+            }
+            else if (30 < d['Age'] && d['Age'] <= 50) {
+                d['Span'] = '31-50';
+            }
+            else {
+                d['Span'] = '51+';
+            }
+        }
+        else {
+            d['Span'] = 'Unknown';
+        }
+        return d;  
+    }, draw);
+</script>
+</body>
+</html>
