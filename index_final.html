@@ -54,9 +54,10 @@
 
                 if (cate == '性别及船舱') {
                     // 以性别、船舱为组合并为类型，作为X轴
-                    var x = myChart.addCategoryAxis('x', ['ClassSex']);
-                    // 以船舱和性别排序
-                    x.addOrderRule('ClassSex')
+                    var x = myChart.addCategoryAxis('x', ['Sex', 'Pclass']);
+                    // 以船舱排序
+                    // x.addOrderRule('ClassSex')
+                    x.addGroupOrderRule('Pclass')
                     x.title = '性别和船舱'
                     // Y轴为人数统计
                     var y = myChart.addMeasureAxis('y', 'Count');
@@ -78,6 +79,29 @@
                 var mySeries = myChart.addSeries(["Survived"], dimple.plot.bar);
                 // 统计数量
                 mySeries.aggregate = dimple.aggregateMethod.count;
+                // 在柱子上显示数字
+                mySeries.afterDraw = function (shape, data) {
+                    // 选择每个形状
+                    var sh = d3.select(shape);
+                    var rect = {
+                        x: parseFloat(sh.attr('x')),
+                        y: parseFloat(sh.attr('y')),
+                        width: parseFloat(sh.attr('width')),
+                        height: parseFloat(sh.attr('height'))
+                    };
+                    if (rect.height >= 8) {
+                        // 只有柱子大于8时才给他写数字
+                        svg.append('text')
+                            .attr('x', rect.x + rect.width / 2)
+                            .attr('y', rect.y + rect.height / 2 + 3.5)
+                            .style('text-anchor', 'middle')
+                            .style('font-size', '12px')
+                            .style('font-family', 'consolas')
+                            .style('opacity', 0.6)
+                            .style('pointer-events', 'none')
+                            .text(d3.format(',.d')(data.yValue));
+                    }
+                };
 
                 // 给幸存者和罹难者添加不同的颜色
                 myChart.assignColor('Survived', '#20bf6b');  // #2d98da
